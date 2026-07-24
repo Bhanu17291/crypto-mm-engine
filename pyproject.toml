@@ -7,7 +7,12 @@ authors = [
     { name = "Bhanu17291", email = "159113005+Bhanu17291@users.noreply.github.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "httpx>=0.28.1",
+    "polars>=1.43.0",
+    "pyarrow>=25.0.0",
+    "websockets>=16.1.1",
+]
 
 [dependency-groups]
 dev = [

@@ -34,7 +34,7 @@ Thumbs.db
 *.pem
 *.key
 
-# Data artifacts (recorded market data, backtest output)
-data/
+# Data artifacts (recorded market data, backtest output) - root-level only,
+# so this doesn't shadow src/crypto_mm_engine/data or tests/data packages
+/data/
 *.parquet
-!tests/**/fixtures/*.parquet
