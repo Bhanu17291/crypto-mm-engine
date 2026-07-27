@@ -11,9 +11,21 @@ def test_sign_query_matches_independent_hmac_computation() -> None:
     # returns whatever it returns.
     params = {"symbol": "LTCBTC", "side": "BUY", "timestamp": "1499827319559"}
     secret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
-    expected = hmac.new(secret.encode(), urlencode(params).encode(), hashlib.sha256).hexdigest()
+    expected = hmac.new(
+        secret.encode(), urlencode(sorted(params.items())).encode(), hashlib.sha256
+    ).hexdigest()
 
     assert sign_query(params, secret) == expected
+
+
+def test_sign_query_sorts_params_alphabetically() -> None:
+    # The WebSocket API requires alphabetically-sorted params in the signed
+    # string; verify reordering the input dict doesn't change the signature.
+    secret = "a-secret"
+    a = {"symbol": "LTCBTC", "apiKey": "k", "timestamp": "1"}
+    b = {"timestamp": "1", "apiKey": "k", "symbol": "LTCBTC"}
+
+    assert sign_query(a, secret) == sign_query(b, secret)
 
 
 def test_sign_query_is_sensitive_to_params_and_secret() -> None:

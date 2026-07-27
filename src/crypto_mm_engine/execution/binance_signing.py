@@ -6,11 +6,13 @@ from urllib.parse import urlencode
 
 
 def sign_query(params: dict[str, str], api_secret: str) -> str:
-    """Binance's REST signing scheme: HMAC-SHA256 over the exact query
-    string that gets sent, hex-encoded. Pulled out as a pure function so
-    it's testable against Binance's documented example without a live
-    connection or real credentials."""
-    query = urlencode(params)
+    """Binance's signing scheme: HMAC-SHA256 over the params as an
+    alphabetically-sorted query string, hex-encoded. The WebSocket API
+    requires sorted params; sorting doesn't break REST signing either
+    (REST just needs the signed string to match what's actually sent, and
+    we always send whatever we signed), so this is used for both.
+    """
+    query = urlencode(sorted(params.items()))
     return hmac.new(api_secret.encode(), query.encode(), hashlib.sha256).hexdigest()
 
 

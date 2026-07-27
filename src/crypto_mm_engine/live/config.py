@@ -18,6 +18,7 @@ class LiveConfig:
     symbol: str
     rest_base_url: str
     ws_base_url: str
+    ws_api_base_url: str
     quoting: QuotingParams
     risk: RiskLimits
 
@@ -64,6 +65,9 @@ def load_live_config() -> LiveConfig:
         symbol=os.environ.get("SYMBOL", "btcusdt"),
         rest_base_url=os.environ.get("BINANCE_TESTNET_REST_URL", "https://testnet.binance.vision"),
         ws_base_url=os.environ.get("BINANCE_TESTNET_WS_URL", "wss://stream.testnet.binance.vision"),
+        ws_api_base_url=os.environ.get(
+            "BINANCE_TESTNET_WS_API_URL", "wss://ws-api.testnet.binance.vision/ws-api/v3"
+        ),
         quoting=quoting,
         risk=risk,
     )

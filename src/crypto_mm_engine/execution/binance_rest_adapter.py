@@ -56,18 +56,6 @@ class BinanceTestnetExecutionAdapter:
         params = {"symbol": self._symbol, "orderId": order_id}
         self._signed_request("DELETE", "/api/v3/order", params)
 
-    def create_listen_key(self) -> str:
-        # USER_STREAM endpoints need the API-key header (already set on the
-        # client) but no signature.
-        response = self._client.post("/api/v3/userDataStream")
-        response.raise_for_status()
-        listen_key: str = response.json()["listenKey"]
-        return listen_key
-
-    def keepalive_listen_key(self, listen_key: str) -> None:
-        response = self._client.put("/api/v3/userDataStream", params={"listenKey": listen_key})
-        response.raise_for_status()
-
     def _signed_request(self, method: str, path: str, params: dict[str, str]) -> dict[str, Any]:
         signed = build_signed_params(params, self._api_secret, int(time.time() * 1000))
         response = self._client.request(method, path, params=signed)

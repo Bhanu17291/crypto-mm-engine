@@ -69,7 +69,10 @@ class PaperTradingRunner:
             market_data_config, on_depth_update=self._on_depth_update, on_trade=self._on_trade
         )
         user_stream = BinanceUserDataStream(
-            self.rest_adapter, self.config.ws_base_url, on_fill=self._on_fill
+            self.config.api_key,
+            self.config.api_secret,
+            self.config.ws_api_base_url,
+            on_fill=self._on_fill,
         )
 
         try:
