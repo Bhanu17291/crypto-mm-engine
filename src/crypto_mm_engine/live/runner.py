@@ -11,7 +11,7 @@ from crypto_mm_engine.data.binance_rest import fetch_depth_snapshot
 from crypto_mm_engine.data.binance_ws import BinanceMarketDataClient
 from crypto_mm_engine.data.config import MarketDataConfig
 from crypto_mm_engine.data.models import DepthUpdate, Trade
-from crypto_mm_engine.data.synchronizer import OrderBookSynchronizer
+from crypto_mm_engine.data.synchronizer import OrderBookOutOfSyncError, OrderBookSynchronizer
 from crypto_mm_engine.execution.binance_rest_adapter import BinanceTestnetExecutionAdapter
 from crypto_mm_engine.execution.binance_user_stream import BinanceUserDataStream
 from crypto_mm_engine.execution.models import LiveFill
@@ -30,6 +30,9 @@ logger = logging.getLogger(__name__)
 
 _CLOSED_ORDER_STATUSES = {"FILLED", "CANCELED", "REJECTED", "EXPIRED"}
 _RECENT_FILLS_LIMIT = 200
+# Gives the WS connection time to actually establish and start buffering
+# diff events before we snapshot - see _bootstrap_book.
+_STREAM_WARMUP_S = 1.0
 
 
 class PaperTradingRunner:
@@ -49,24 +52,19 @@ class PaperTradingRunner:
             config.api_key, config.api_secret, config.symbol, config.rest_base_url
         )
         self.quotes = QuoteManager(self.rest_adapter)
+        self.market_data_config = MarketDataConfig(
+            symbols=(config.symbol,),
+            ws_base_url=config.ws_base_url,
+            rest_base_url=config.rest_base_url,
+        )
         self._last_market_data_ms = 0
         self._start_ms: int | None = None
         self.latest_status: StatusSnapshot | None = None
         self.recent_fills: deque[FillEvent] = deque(maxlen=_RECENT_FILLS_LIMIT)
 
     async def run(self) -> None:
-        market_data_config = MarketDataConfig(
-            symbols=(self.config.symbol,),
-            ws_base_url=self.config.ws_base_url,
-            rest_base_url=self.config.rest_base_url,
-        )
-        async with httpx.AsyncClient(base_url=self.config.rest_base_url) as client:
-            snapshot = await fetch_depth_snapshot(client, market_data_config, self.config.symbol)
-        self.sync.apply_snapshot(snapshot)
-        logger.info("bootstrapped order book from snapshot symbol=%s", self.config.symbol)
-
         market_client = BinanceMarketDataClient(
-            market_data_config, on_depth_update=self._on_depth_update, on_trade=self._on_trade
+            self.market_data_config, on_depth_update=self._on_depth_update, on_trade=self._on_trade
         )
         user_stream = BinanceUserDataStream(
             self.config.api_key,
@@ -75,13 +73,35 @@ class PaperTradingRunner:
             on_fill=self._on_fill,
         )
 
+        # Start the depth stream before snapshotting: Binance's documented
+        # procedure requires the stream to already be buffering diff events
+        # by the time we ask for a snapshot, otherwise anything that lands
+        # between the REST call and the WS connection opening is silently
+        # missed and we never notice - the diff sequence just skips.
+        market_task = asyncio.create_task(market_client.run())
+        await asyncio.sleep(_STREAM_WARMUP_S)
+        await self._bootstrap_book()
+
         try:
-            await asyncio.gather(market_client.run(), user_stream.run())
+            await asyncio.gather(market_task, user_stream.run())
         finally:
             self.rest_adapter.close()
 
+    async def _bootstrap_book(self) -> None:
+        async with httpx.AsyncClient(base_url=self.config.rest_base_url) as client:
+            snapshot = await fetch_depth_snapshot(
+                client, self.market_data_config, self.config.symbol
+            )
+        self.sync.apply_snapshot(snapshot)
+        logger.info("bootstrapped order book from snapshot symbol=%s", self.config.symbol)
+
     async def _on_depth_update(self, update: DepthUpdate) -> None:
-        self.sync.apply_update(update)
+        try:
+            self.sync.apply_update(update)
+        except OrderBookOutOfSyncError as exc:
+            logger.warning("order book gap detected (%s), resyncing from a fresh snapshot", exc)
+            await self._bootstrap_book()
+            return
         self._last_market_data_ms = update.event_time_ms
         await self._requote(update.event_time_ms)
 
