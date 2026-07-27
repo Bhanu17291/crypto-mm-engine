@@ -113,6 +113,19 @@ def test_reset_circuit_breaker_clears_window_and_resumes() -> None:
     assert gated == QUOTE
 
 
+def test_fill_rate_is_none_before_any_cycles_recorded() -> None:
+    manager = make_manager()
+    assert manager.fill_rate is None
+
+
+def test_fill_rate_reflects_recent_cycles() -> None:
+    manager = make_manager(fill_rate_window=4)
+    for filled in (True, False, True, False):
+        manager.record_quote_cycle(filled)
+
+    assert manager.fill_rate == 0.5
+
+
 def test_risk_limits_rejects_invalid_fill_rate_bounds() -> None:
     with pytest.raises(ValueError):
         RiskLimits(

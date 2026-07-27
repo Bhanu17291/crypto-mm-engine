@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from collections import deque
 
 import httpx
@@ -18,10 +19,14 @@ from crypto_mm_engine.execution.models import LiveFill
 from crypto_mm_engine.execution.quote_manager import QuoteManager
 from crypto_mm_engine.live.config import LiveConfig
 from crypto_mm_engine.live.status import (
+    CancelEvent,
     FillEvent,
     StatusSnapshot,
+    TradeTapeEvent,
+    build_cancel_event,
     build_fill_event,
     build_status_snapshot,
+    build_trade_tape_event,
 )
 from crypto_mm_engine.quoting.avellaneda_stoikov import compute_quotes
 from crypto_mm_engine.risk.risk_manager import RiskManager
@@ -29,7 +34,8 @@ from crypto_mm_engine.risk.risk_manager import RiskManager
 logger = logging.getLogger(__name__)
 
 _CLOSED_ORDER_STATUSES = {"FILLED", "CANCELED", "REJECTED", "EXPIRED"}
-_RECENT_FILLS_LIMIT = 200
+_RECENT_EVENTS_LIMIT = 200
+_BOOK_DEPTH_LEVELS = 20
 # Gives the WS connection time to actually establish and start buffering
 # diff events before we snapshot - see _bootstrap_book.
 _STREAM_WARMUP_S = 1.0
@@ -51,7 +57,7 @@ class PaperTradingRunner:
         self.rest_adapter = BinanceTestnetExecutionAdapter(
             config.api_key, config.api_secret, config.symbol, config.rest_base_url
         )
-        self.quotes = QuoteManager(self.rest_adapter)
+        self.quotes = QuoteManager(self.rest_adapter, on_cancel=self._on_cancel)
         self.market_data_config = MarketDataConfig(
             symbols=(config.symbol,),
             ws_base_url=config.ws_base_url,
@@ -60,7 +66,9 @@ class PaperTradingRunner:
         self._last_market_data_ms = 0
         self._start_ms: int | None = None
         self.latest_status: StatusSnapshot | None = None
-        self.recent_fills: deque[FillEvent] = deque(maxlen=_RECENT_FILLS_LIMIT)
+        self.recent_fills: deque[FillEvent] = deque(maxlen=_RECENT_EVENTS_LIMIT)
+        self.recent_trades: deque[TradeTapeEvent] = deque(maxlen=_RECENT_EVENTS_LIMIT)
+        self.cancelled_orders: deque[CancelEvent] = deque(maxlen=_RECENT_EVENTS_LIMIT)
 
     async def run(self) -> None:
         market_client = BinanceMarketDataClient(
@@ -107,8 +115,13 @@ class PaperTradingRunner:
 
     async def _on_trade(self, trade: Trade) -> None:
         # The public trade tape isn't our fills live (those come from the
-        # user data stream) - it still counts as evidence market data is fresh.
+        # user data stream) - it still counts as evidence market data is
+        # fresh, and it's what the Order Book page's trade tape shows.
         self._last_market_data_ms = max(self._last_market_data_ms, trade.trade_time_ms)
+        self.recent_trades.appendleft(build_trade_tape_event(trade))
+
+    def _on_cancel(self, order_id: str) -> None:
+        self.cancelled_orders.appendleft(build_cancel_event(order_id, int(time.time() * 1000)))
 
     async def _on_fill(self, fill: LiveFill) -> None:
         self.pnl.on_fill(fill)
@@ -137,6 +150,7 @@ class PaperTradingRunner:
         )
         quote = compute_quotes(mid, self.pnl.inventory, self.config.quoting, time_remaining)
         gated = self.risk.gate_quote(quote, self.pnl.inventory, self._last_market_data_ms, now_ms)
+        cycle_start = time.perf_counter()
         try:
             self.quotes.apply_quote(gated)
         except httpx.HTTPError as exc:
@@ -144,8 +158,10 @@ class PaperTradingRunner:
             # blip, rate limit) shouldn't take the whole engine down - log
             # it and try again on the next requote.
             logger.warning("failed to update resting orders: %s", exc)
+        requote_latency_ms = (time.perf_counter() - cycle_start) * 1000
         self.risk.check_daily_loss(self.pnl.equity(mid))
 
+        bids, asks = self.sync.book.depth(levels=_BOOK_DEPTH_LEVELS)
         self.latest_status = build_status_snapshot(
             symbol=self.config.symbol,
             mid_price=mid,
@@ -154,6 +170,13 @@ class PaperTradingRunner:
             quote=gated,
             risk=self.risk,
             timestamp_ms=now_ms,
+            quoting_params=self.config.quoting,
+            time_remaining_s=time_remaining,
+            bid_order_id=self.quotes.bid_order_id,
+            ask_order_id=self.quotes.ask_order_id,
+            requote_latency_ms=requote_latency_ms,
+            book_bids=bids,
+            book_asks=asks,
         )
 
         logger.info(

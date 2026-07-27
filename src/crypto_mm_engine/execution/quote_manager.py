@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 
 from crypto_mm_engine.execution.models import OrderExecutionAdapter, Side
 from crypto_mm_engine.quoting.models import Quote
@@ -16,8 +17,13 @@ class QuoteManager:
     live - only the adapter underneath differs.
     """
 
-    def __init__(self, adapter: OrderExecutionAdapter) -> None:
+    def __init__(
+        self,
+        adapter: OrderExecutionAdapter,
+        on_cancel: Callable[[str], None] | None = None,
+    ) -> None:
         self._adapter = adapter
+        self._on_cancel = on_cancel
         self.bid_order_id: str | None = None
         self.ask_order_id: str | None = None
 
@@ -44,8 +50,12 @@ class QuoteManager:
             # can cross in flight). Either way it's not "resting" from our
             # perspective anymore, so the caller clears the id regardless -
             # retrying the same doomed cancel forever would permanently
-            # stall this side.
+            # stall this side. Not reported via on_cancel since nothing
+            # was actually cancelled here.
             logger.warning("cancel failed for order %s, dropping it: %s", order_id, exc)
+            return
+        if self._on_cancel is not None:
+            self._on_cancel(order_id)
 
     def clear_if_closed(self, side: Side, order_id: str, still_open: bool) -> None:
         """Call when a fill notification arrives for order_id; clears our

@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from crypto_mm_engine.api.connection_manager import ConnectionManager
 from crypto_mm_engine.live.runner import PaperTradingRunner
-from crypto_mm_engine.live.status import FillEvent, StatusSnapshot
+from crypto_mm_engine.live.status import CancelEvent, FillEvent, StatusSnapshot, TradeTapeEvent
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +58,14 @@ def create_app(runner: PaperTradingRunner) -> FastAPI:
     @app.get("/api/fills")
     def get_fills() -> list[FillEvent]:
         return list(runner.recent_fills)
+
+    @app.get("/api/trades")
+    def get_trades() -> list[TradeTapeEvent]:
+        return list(runner.recent_trades)
+
+    @app.get("/api/cancellations")
+    def get_cancellations() -> list[CancelEvent]:
+        return list(runner.cancelled_orders)
 
     @app.websocket("/ws/status")
     async def ws_status(websocket: WebSocket) -> None:

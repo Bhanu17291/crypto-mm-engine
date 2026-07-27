@@ -42,6 +42,14 @@ class RiskManager:
     def is_circuit_breaker_tripped(self) -> bool:
         return self._circuit_breaker_tripped
 
+    @property
+    def fill_rate(self) -> float | None:
+        """None until the window has enough samples to mean anything -
+        distinct from 0.0, which would claim "definitely no fills"."""
+        if not self._recent_cycles:
+            return None
+        return sum(self._recent_cycles) / len(self._recent_cycles)
+
     def check_daily_loss(self, daily_pnl: float) -> None:
         if daily_pnl <= -self.limits.max_daily_loss:
             self._kill_switch_tripped = True

@@ -71,6 +71,17 @@ def test_apply_quote_drops_order_id_even_when_cancel_fails() -> None:
     assert adapter.placed[-1] == (Side.BID, 98.5, 1.0)
 
 
+def test_on_cancel_hook_fires_only_for_successful_cancels() -> None:
+    adapter = FakeAdapter(fail_cancel_for={"1"})
+    cancelled: list[str] = []
+    manager = QuoteManager(adapter, on_cancel=cancelled.append)
+    manager.apply_quote(Quote(bid_price=99.0, bid_size=1.0, ask_price=101.0, ask_size=1.0))
+
+    manager.apply_quote(Quote(bid_price=98.5, bid_size=1.0, ask_price=101.5, ask_size=1.0))
+
+    assert cancelled == ["2"]  # "1"'s cancel failed, so it never fires the hook
+
+
 def test_clear_if_closed_only_clears_when_not_open() -> None:
     adapter = FakeAdapter()
     manager = QuoteManager(adapter)
