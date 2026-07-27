@@ -4,10 +4,11 @@ from crypto_mm_engine.quoting.models import Quote
 
 
 class FakeAdapter:
-    def __init__(self) -> None:
+    def __init__(self, fail_cancel_for: set[str] | None = None) -> None:
         self.placed: list[tuple[Side, float, float]] = []
         self.cancelled: list[str] = []
         self._next_id = 1
+        self._fail_cancel_for = fail_cancel_for or set()
 
     def place_order(self, side: Side, price: float, size: float) -> str:
         order_id = str(self._next_id)
@@ -16,6 +17,8 @@ class FakeAdapter:
         return order_id
 
     def cancel_order(self, order_id: str) -> None:
+        if order_id in self._fail_cancel_for:
+            raise RuntimeError("Unknown order sent.")
         self.cancelled.append(order_id)
 
 
@@ -50,6 +53,22 @@ def test_apply_quote_skips_side_with_no_price() -> None:
 
     assert manager.bid_order_id is None
     assert manager.ask_order_id == "1"
+
+
+def test_apply_quote_drops_order_id_even_when_cancel_fails() -> None:
+    # A cancel can fail because the order is already gone on the venue
+    # (filled/expired before we got to it) - if we didn't clear the id
+    # here, every future requote would retry the same doomed cancel
+    # forever and this side would never place a fresh order again.
+    adapter = FakeAdapter(fail_cancel_for={"1"})
+    manager = QuoteManager(adapter)
+    manager.apply_quote(Quote(bid_price=99.0, bid_size=1.0, ask_price=None, ask_size=0.0))
+    assert manager.bid_order_id == "1"
+
+    manager.apply_quote(Quote(bid_price=98.5, bid_size=1.0, ask_price=None, ask_size=0.0))
+
+    assert manager.bid_order_id == "2"  # moved on to a fresh order, not stuck on "1"
+    assert adapter.placed[-1] == (Side.BID, 98.5, 1.0)
 
 
 def test_clear_if_closed_only_clears_when_not_open() -> None:
