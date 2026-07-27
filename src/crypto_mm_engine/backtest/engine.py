@@ -5,10 +5,12 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from crypto_mm_engine.backtest.fill_simulator import FillSimulator
-from crypto_mm_engine.backtest.models import BacktestConfig, BacktestResult, EquityPoint, Fill, Side
+from crypto_mm_engine.backtest.models import BacktestConfig, BacktestResult, EquityPoint, Fill
 from crypto_mm_engine.backtest.pnl import PnLTracker
 from crypto_mm_engine.data.models import DepthSnapshot, DepthUpdate, Trade
 from crypto_mm_engine.data.synchronizer import OrderBookSynchronizer
+from crypto_mm_engine.execution.backtest_adapter import BacktestExecutionAdapter
+from crypto_mm_engine.execution.quote_manager import QuoteManager
 from crypto_mm_engine.quoting.avellaneda_stoikov import compute_quotes
 from crypto_mm_engine.quoting.models import Quote, QuotingParams
 
@@ -22,8 +24,9 @@ class _PendingQuote:
 class BacktestEngine:
     """Replays a recorded book against the AS quoting engine: at each depth
     update we recompute quotes off the reconstructed book, delay them by
-    latency_ms before they actually rest (cancel-replace), and resolve fills
-    against the trade tape via queue-position matching.
+    latency_ms before they actually rest (cancel-replace via the same
+    QuoteManager a live runner uses), and resolve fills against the trade
+    tape via queue-position matching.
     """
 
     def __init__(
@@ -34,8 +37,8 @@ class BacktestEngine:
         self.fill_sim = FillSimulator(config.fees)
         self.pnl = PnLTracker()
         self.sync = OrderBookSynchronizer(symbol)
-        self._bid_order_id: int | None = None
-        self._ask_order_id: int | None = None
+        self._adapter = BacktestExecutionAdapter(self.fill_sim, self.sync.book)
+        self._quotes = QuoteManager(self._adapter)
         self._pending: deque[_PendingQuote] = deque()
 
     def run(
@@ -83,27 +86,8 @@ class BacktestEngine:
 
     def _apply_due_quotes(self, now_ms: int) -> None:
         while self._pending and self._pending[0].apply_at_ms <= now_ms:
-            self._replace_quotes(self._pending.popleft().quote, now_ms)
-
-    def _replace_quotes(self, quote: Quote, now_ms: int) -> None:
-        if self._bid_order_id is not None:
-            self.fill_sim.cancel_order(self._bid_order_id)
-            self._bid_order_id = None
-        if self._ask_order_id is not None:
-            self.fill_sim.cancel_order(self._ask_order_id)
-            self._ask_order_id = None
-
-        book = self.sync.book
-        if quote.bid_price is not None and quote.bid_size > 0:
-            queue_ahead = book.bid_quantity_at(quote.bid_price)
-            self._bid_order_id = self.fill_sim.place_order(
-                Side.BID, quote.bid_price, quote.bid_size, queue_ahead, now_ms
-            )
-        if quote.ask_price is not None and quote.ask_size > 0:
-            queue_ahead = book.ask_quantity_at(quote.ask_price)
-            self._ask_order_id = self.fill_sim.place_order(
-                Side.ASK, quote.ask_price, quote.ask_size, queue_ahead, now_ms
-            )
+            self._adapter.now_ms = now_ms
+            self._quotes.apply_quote(self._pending.popleft().quote)
 
     def _process_trade(self, trade: Trade) -> list[Fill]:
         mid = self.sync.book.mid_price()
@@ -112,8 +96,6 @@ class BacktestEngine:
         fills = self.fill_sim.on_trade(trade, mid)
         for fill in fills:
             self.pnl.on_fill(fill)
-            if fill.side is Side.BID and not self.fill_sim.has_order(fill.order_id):
-                self._bid_order_id = None
-            if fill.side is Side.ASK and not self.fill_sim.has_order(fill.order_id):
-                self._ask_order_id = None
+            still_open = self.fill_sim.has_order(fill.order_id)
+            self._quotes.clear_if_closed(fill.side, str(fill.order_id), still_open)
         return fills

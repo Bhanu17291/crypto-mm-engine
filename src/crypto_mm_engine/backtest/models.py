@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
 
+from crypto_mm_engine.execution.models import Side
 
-class Side(Enum):
-    BID = "bid"
-    ASK = "ask"
+__all__ = [
+    "Side",
+    "FeeSchedule",
+    "BacktestConfig",
+    "RestingOrder",
+    "Fill",
+    "EquityPoint",
+    "BacktestResult",
+]
 
 
 @dataclass(frozen=True, slots=True)

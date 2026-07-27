@@ -1,8 +1,28 @@
 from __future__ import annotations
 
-from crypto_mm_engine.backtest.models import Fill, Side
+from typing import Protocol
+
+from crypto_mm_engine.execution.models import Side
 
 _EPSILON = 1e-9
+
+
+class _FillLike(Protocol):
+    """What PnLTracker actually needs from a fill - satisfied structurally
+    by both backtest.models.Fill and execution.models.LiveFill, so the same
+    accounting runs unchanged whether fills come from the queue-position
+    simulator or Binance's own user data stream. Declared as read-only
+    properties since both are frozen dataclasses.
+    """
+
+    @property
+    def side(self) -> Side: ...
+    @property
+    def price(self) -> float: ...
+    @property
+    def quantity(self) -> float: ...
+    @property
+    def fee(self) -> float: ...
 
 
 class PnLTracker:
@@ -16,7 +36,7 @@ class PnLTracker:
         self.avg_entry_price = 0.0
         self.fees_paid = 0.0
 
-    def on_fill(self, fill: Fill) -> None:
+    def on_fill(self, fill: _FillLike) -> None:
         self.fees_paid += fill.fee
         self.realized_pnl -= fill.fee
 
