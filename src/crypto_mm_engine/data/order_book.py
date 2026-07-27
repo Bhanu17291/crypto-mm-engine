@@ -51,6 +51,12 @@ class OrderBook:
         price = min(self._asks)
         return PriceLevel(price, self._asks[price])
 
+    def bid_quantity_at(self, price: float) -> float:
+        return self._bids.get(price, 0.0)
+
+    def ask_quantity_at(self, price: float) -> float:
+        return self._asks.get(price, 0.0)
+
     def mid_price(self) -> float | None:
         bid, ask = self.best_bid(), self.best_ask()
         if bid is None or ask is None:
