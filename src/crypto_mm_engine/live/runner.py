@@ -137,7 +137,13 @@ class PaperTradingRunner:
         )
         quote = compute_quotes(mid, self.pnl.inventory, self.config.quoting, time_remaining)
         gated = self.risk.gate_quote(quote, self.pnl.inventory, self._last_market_data_ms, now_ms)
-        self.quotes.apply_quote(gated)
+        try:
+            self.quotes.apply_quote(gated)
+        except httpx.HTTPError as exc:
+            # A single rejected/failed order (bad filter, transient network
+            # blip, rate limit) shouldn't take the whole engine down - log
+            # it and try again on the next requote.
+            logger.warning("failed to update resting orders: %s", exc)
         self.risk.check_daily_loss(self.pnl.equity(mid))
 
         self.latest_status = build_status_snapshot(
