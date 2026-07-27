@@ -17,14 +17,20 @@ _RECV_WINDOW_MS = "60000"  # generous tolerance for local clock drift
 
 
 def round_to_step(value: float, step: Decimal) -> str:
-    """Floors value to the exchange's tick/lot size. Binance rejects any
-    price or quantity that isn't an exact multiple of the symbol's
-    PRICE_FILTER.tickSize / LOT_SIZE.stepSize - our quoting math has no
-    idea what those are, so this has to happen at the execution boundary.
-    Rounding down (not to nearest) means we never quote a size or price
-    outside what was actually intended.
+    """Floors value to the nearest multiple of the exchange's tick/lot
+    size. Binance rejects any price or quantity that isn't an exact
+    multiple of the symbol's PRICE_FILTER.tickSize / LOT_SIZE.stepSize -
+    our quoting math has no idea what those are, so this has to happen at
+    the execution boundary.
+
+    Deliberately floor-divide-then-multiply rather than Decimal.quantize:
+    quantize rounds to the target's own display precision, and Binance's
+    exchangeInfo returns tick/step sizes zero-padded like "0.01000000" -
+    quantizing against that rounds to 8 decimal places, not the
+    mathematically equivalent 2, which silently doesn't round at all.
     """
-    return str(Decimal(str(value)).quantize(step, rounding=ROUND_DOWN))
+    multiples = (Decimal(str(value)) / step).to_integral_value(rounding=ROUND_DOWN)
+    return format(multiples * step, "f")
 
 
 class BinanceTestnetExecutionAdapter:
