@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from crypto_mm_engine.execution.binance_signing import build_signed_params
+from crypto_mm_engine.execution.binance_signing import build_signed_query_string
 from crypto_mm_engine.execution.models import Side
 
 logger = logging.getLogger(__name__)
@@ -92,8 +92,11 @@ class BinanceTestnetExecutionAdapter:
     def _signed_request(self, method: str, path: str, params: dict[str, str]) -> dict[str, Any]:
         payload = dict(params)
         payload.setdefault("recvWindow", _RECV_WINDOW_MS)
-        signed = build_signed_params(payload, self._api_secret, int(time.time() * 1000))
-        response = self._client.request(method, path, params=signed)
+        # Sent as a literal query string, not params=<dict>, so httpx's own
+        # serializer never gets a chance to re-encode this in a different
+        # order/escaping than what was actually signed.
+        query = build_signed_query_string(payload, self._api_secret, int(time.time() * 1000))
+        response = self._client.request(method, f"{path}?{query}")
         if response.is_error:
             logger.error(
                 "Binance API error %s %s -> %s: %s",

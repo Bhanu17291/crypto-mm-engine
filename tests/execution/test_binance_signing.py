@@ -2,7 +2,11 @@ import hashlib
 import hmac
 from urllib.parse import urlencode
 
-from crypto_mm_engine.execution.binance_signing import build_signed_params, sign_query
+from crypto_mm_engine.execution.binance_signing import (
+    build_signed_params,
+    build_signed_query_string,
+    sign_query,
+)
 
 
 def test_sign_query_matches_independent_hmac_computation() -> None:
@@ -52,3 +56,25 @@ def test_build_signed_params_signature_excludes_itself() -> None:
     expected = sign_query({"symbol": "BTCUSDT", "timestamp": "123"}, "secret")
 
     assert result["signature"] == expected
+
+
+def test_build_signed_query_string_signature_matches_the_string_it_is_appended_to() -> None:
+    # This is the property that actually matters for REST: whatever string
+    # we hand the HTTP client must be byte-for-byte what was signed. A bug
+    # here (e.g. a second encoder re-serializing the params) is exactly
+    # what produces Binance's "-1022 Signature for this request is not
+    # valid" even when the key/secret and math are otherwise correct.
+    result = build_signed_query_string({"symbol": "BTCUSDT", "side": "BUY"}, "secret", 123)
+
+    query, _, signature = result.rpartition("&signature=")
+    assert (
+        sign_query({"symbol": "BTCUSDT", "side": "BUY", "timestamp": "123"}, "secret") == signature
+    )
+    assert query == "side=BUY&symbol=BTCUSDT&timestamp=123"
+
+
+def test_build_signed_query_string_is_alphabetically_sorted() -> None:
+    result = build_signed_query_string({"z": "1", "a": "2"}, "secret", 999)
+    query = result.split("&signature=")[0]
+
+    assert query == "a=2&timestamp=999&z=1"
