@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections import deque
 
 import httpx
 
@@ -16,12 +17,19 @@ from crypto_mm_engine.execution.binance_user_stream import BinanceUserDataStream
 from crypto_mm_engine.execution.models import LiveFill
 from crypto_mm_engine.execution.quote_manager import QuoteManager
 from crypto_mm_engine.live.config import LiveConfig
+from crypto_mm_engine.live.status import (
+    FillEvent,
+    StatusSnapshot,
+    build_fill_event,
+    build_status_snapshot,
+)
 from crypto_mm_engine.quoting.avellaneda_stoikov import compute_quotes
 from crypto_mm_engine.risk.risk_manager import RiskManager
 
 logger = logging.getLogger(__name__)
 
 _CLOSED_ORDER_STATUSES = {"FILLED", "CANCELED", "REJECTED", "EXPIRED"}
+_RECENT_FILLS_LIMIT = 200
 
 
 class PaperTradingRunner:
@@ -43,6 +51,8 @@ class PaperTradingRunner:
         self.quotes = QuoteManager(self.rest_adapter)
         self._last_market_data_ms = 0
         self._start_ms: int | None = None
+        self.latest_status: StatusSnapshot | None = None
+        self.recent_fills: deque[FillEvent] = deque(maxlen=_RECENT_FILLS_LIMIT)
 
     async def run(self) -> None:
         market_data_config = MarketDataConfig(
@@ -82,6 +92,7 @@ class PaperTradingRunner:
         still_open = fill.order_status not in _CLOSED_ORDER_STATUSES
         self.quotes.clear_if_closed(fill.side, fill.order_id, still_open)
         self.risk.record_quote_cycle(filled=True)
+        self.recent_fills.appendleft(build_fill_event(fill))
         logger.info(
             "fill side=%s price=%s qty=%s inventory=%.6f realized_pnl=%.4f",
             fill.side.value,
@@ -105,6 +116,16 @@ class PaperTradingRunner:
         gated = self.risk.gate_quote(quote, self.pnl.inventory, self._last_market_data_ms, now_ms)
         self.quotes.apply_quote(gated)
         self.risk.check_daily_loss(self.pnl.equity(mid))
+
+        self.latest_status = build_status_snapshot(
+            symbol=self.config.symbol,
+            mid_price=mid,
+            max_position=self.config.risk.max_position,
+            pnl=self.pnl,
+            quote=gated,
+            risk=self.risk,
+            timestamp_ms=now_ms,
+        )
 
         logger.info(
             "status mid=%.2f inventory=%.6f bid=%s ask=%s equity=%.4f halted=%s",

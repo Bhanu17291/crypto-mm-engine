@@ -41,3 +41,19 @@ uv run python -m crypto_mm_engine.live
 ```
 
 This wires live market data into the same quoting/risk code the backtest harness uses; only the execution adapter and fill source (Binance's user data stream instead of a simulator) differ. Status and fills are logged as structured JSON lines to stdout.
+
+### Live dashboard
+
+The dashboard needs both the API server (which also runs the paper-trading runner) and the frontend dev server.
+
+```bash
+uv run python -m crypto_mm_engine.api   # http://localhost:8010 - requires the same .env as above
+```
+
+```bash
+cd frontend
+npm install     # first time only
+npm run dev     # http://localhost:5180
+```
+
+The dashboard is empty/disconnected until the API server is both running and connected to Binance Testnet - it never fabricates data.

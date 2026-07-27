@@ -8,10 +8,12 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.140.0",
     "httpx>=0.28.1",
     "polars>=1.43.0",
     "pyarrow>=25.0.0",
     "python-dotenv>=1.2.2",
+    "uvicorn[standard]>=0.51.0",
     "websockets>=16.1.1",
 ]
 
