@@ -3,6 +3,8 @@ import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tan
 import { Card } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatPrice, formatQty, formatTime, formatUsd } from '@/lib/format'
 import type { FillEvent } from '@/types/status'
@@ -74,9 +76,11 @@ export function FillsTable({ fills, loading }: { fills: FillEvent[]; loading?: b
           ))}
         </div>
       ) : data.length === 0 ? (
-        <div className="flex h-24 items-center justify-center text-xs text-muted-foreground">
-          No fills yet
-        </div>
+        <EmptyState
+          icon={Zap}
+          title="No fills yet"
+          description="Quotes are live on the book — this fills in the moment your first order gets hit."
+        />
       ) : (
         <Table>
           <TableHeader>

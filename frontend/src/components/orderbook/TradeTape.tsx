@@ -1,5 +1,7 @@
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatPrice, formatQty, formatTime } from '@/lib/format'
 import type { TradeTapeEvent } from '@/types/status'
@@ -16,9 +18,11 @@ export function TradeTape({ trades, loading }: { trades: TradeTapeEvent[]; loadi
           ))}
         </div>
       ) : trades.length === 0 ? (
-        <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
-          No trades yet
-        </div>
+        <EmptyState
+          icon={Activity}
+          title="No trades yet"
+          description="The public tape fills in as the market trades — this isn't limited to our own orders."
+        />
       ) : (
         <div className="max-h-80 space-y-0.5 overflow-y-auto font-mono text-xs">
           {trades.slice(0, 60).map((trade, i) => {

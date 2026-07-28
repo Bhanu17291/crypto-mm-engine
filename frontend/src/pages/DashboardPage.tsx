@@ -4,6 +4,7 @@ import { QuoteCard } from '@/components/dashboard/QuoteCard'
 import { RiskStatusCard } from '@/components/dashboard/RiskStatusCard'
 import { FillsTable } from '@/components/dashboard/FillsTable'
 import { HistoryChartsCard } from '@/components/dashboard/HistoryChartsCard'
+import { LiveTicker } from '@/components/dashboard/LiveTicker'
 import { useEngineStore } from '@/store/engine-store'
 import { useFills } from '@/hooks/useFills'
 import { formatPct, formatQty, formatUsd } from '@/lib/format'
@@ -17,6 +18,8 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-4 py-4">
+      <LiveTicker status={status} history={history} />
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Equity" value={status?.equity ?? null} format={formatUsd} icon={Wallet} tone="auto" />
         <StatCard

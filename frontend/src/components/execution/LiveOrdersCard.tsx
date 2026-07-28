@@ -1,5 +1,8 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ListOrdered } from 'lucide-react'
 import { formatPrice, formatQty } from '@/lib/format'
 import type { StatusSnapshot } from '@/types/status'
 
@@ -17,10 +20,17 @@ export function LiveOrdersCard({ status }: { status: StatusSnapshot | null }) {
     <Card className="gap-3 border-border/60 bg-card p-4 shadow-lg shadow-black/20">
       <span className="text-xs font-medium text-muted-foreground">Live Orders</span>
 
-      {!status ? null : orders.length === 0 ? (
-        <div className="flex h-20 items-center justify-center text-xs text-muted-foreground">
-          No resting orders
+      {!status ? (
+        <div className="space-y-2">
+          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-14 w-full" />
         </div>
+      ) : orders.length === 0 ? (
+        <EmptyState
+          icon={ListOrdered}
+          title="No resting orders"
+          description="Quotes are being withheld or between requotes — they'll appear here once placed."
+        />
       ) : (
         <div className="space-y-2">
           {orders.map((order) => (

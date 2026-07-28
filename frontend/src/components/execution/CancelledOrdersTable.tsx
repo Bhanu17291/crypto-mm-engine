@@ -1,6 +1,8 @@
 import { Card } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import { XCircle } from 'lucide-react'
 import { formatTime } from '@/lib/format'
 import type { CancelEvent } from '@/types/status'
 
@@ -22,9 +24,11 @@ export function CancelledOrdersTable({
           ))}
         </div>
       ) : cancellations.length === 0 ? (
-        <div className="flex h-24 items-center justify-center text-xs text-muted-foreground">
-          No cancellations yet
-        </div>
+        <EmptyState
+          icon={XCircle}
+          title="No cancellations yet"
+          description="Orders get cancelled and replaced automatically as the strategy re-quotes."
+        />
       ) : (
         <Table>
           <TableHeader>
