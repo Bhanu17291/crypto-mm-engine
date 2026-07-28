@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { NavLink } from 'react-router-dom'
 import { ChevronsLeft, ChevronsRight, Activity } from 'lucide-react'
 import { NAV_ITEMS } from './nav-config'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 export function Sidebar() {
@@ -30,7 +30,7 @@ export function Sidebar() {
 
       <nav className="flex flex-1 flex-col gap-1 p-2">
         {NAV_ITEMS.map((item) => (
-          <NavRow key={item.label} item={item} collapsed={collapsed} />
+          <NavRow key={item.path} item={item} collapsed={collapsed} />
         ))}
       </nav>
 
@@ -66,17 +66,16 @@ function NavRow({
 }) {
   const Icon = item.icon
 
-  const row = (
+  const row = ({ isActive }: { isActive: boolean }) => (
     <div
       className={cn(
         'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-        item.active
+        isActive
           ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-          : 'text-sidebar-foreground/55 cursor-not-allowed',
-        !item.active && 'hover:bg-sidebar-accent/50',
+          : 'text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
       )}
     >
-      {item.active && (
+      {isActive && (
         <motion.span
           layoutId="active-nav-indicator"
           className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-brand"
@@ -84,28 +83,23 @@ function NavRow({
       )}
       <Icon className="size-4 shrink-0" strokeWidth={2} />
       {!collapsed && <span className="truncate">{item.label}</span>}
-      {!collapsed && !item.active && (
-        <Badge
-          variant="secondary"
-          className="ml-auto h-4.5 rounded-full px-1.5 text-[10px] font-normal text-sidebar-foreground/45"
-        >
-          Soon
-        </Badge>
-      )}
     </div>
+  )
+
+  const link = (
+    <NavLink to={item.path} end={item.path === '/'}>
+      {({ isActive }) => row({ isActive })}
+    </NavLink>
   )
 
   if (collapsed) {
     return (
       <Tooltip delayDuration={150}>
-        <TooltipTrigger asChild>{row}</TooltipTrigger>
-        <TooltipContent side="right">
-          {item.label}
-          {!item.active && ' — coming soon'}
-        </TooltipContent>
+        <TooltipTrigger asChild>{link}</TooltipTrigger>
+        <TooltipContent side="right">{item.label}</TooltipContent>
       </Tooltip>
     )
   }
 
-  return row
+  return link
 }

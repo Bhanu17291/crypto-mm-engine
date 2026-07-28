@@ -1,4 +1,6 @@
+import { useLocation } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { NAV_ITEMS } from './nav-config'
 import { cn } from '@/lib/utils'
 
 export function TopBar({
@@ -8,10 +10,13 @@ export function TopBar({
   symbol: string | null
   connected: boolean
 }) {
+  const { pathname } = useLocation()
+  const title = NAV_ITEMS.find((item) => (item.path === '/' ? pathname === '/' : pathname.startsWith(item.path)))?.label ?? 'Dashboard'
+
   return (
     <header className="flex h-14 shrink-0 items-center justify-between px-6">
       <div className="flex items-center gap-3">
-        <h1 className="text-sm font-semibold tracking-tight">Dashboard</h1>
+        <h1 className="text-sm font-semibold tracking-tight">{title}</h1>
         {symbol && (
           <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
             {symbol.toUpperCase()}

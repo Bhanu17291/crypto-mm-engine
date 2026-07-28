@@ -47,6 +47,8 @@
     --color-positive-muted: var(--positive-muted);
     --color-negative: var(--negative);
     --color-negative-muted: var(--negative-muted);
+    --color-warning: var(--warning);
+    --color-warning-muted: var(--warning-muted);
     --color-surface: var(--surface);
     --color-surface-hover: var(--surface-hover);
     --radius-sm: calc(var(--radius) * 0.6);
@@ -97,6 +99,8 @@
     --positive-muted: oklch(0.6 0.13 155 / 12%);
     --negative: oklch(0.6 0.17 22);
     --negative-muted: oklch(0.6 0.17 22 / 12%);
+    --warning: oklch(0.7 0.15 80);
+    --warning-muted: oklch(0.7 0.15 80 / 14%);
     --surface: oklch(0.99 0 0);
     --surface-hover: oklch(0.97 0 0);
 }
@@ -139,6 +143,8 @@
     --positive-muted: oklch(0.72 0.13 155 / 14%);
     --negative: oklch(0.68 0.16 22);
     --negative-muted: oklch(0.68 0.16 22 / 14%);
+    --warning: oklch(0.75 0.14 80);
+    --warning-muted: oklch(0.75 0.14 80 / 16%);
     --surface: oklch(0.155 0.003 264);
     --surface-hover: oklch(0.2 0.004 264);
 }
