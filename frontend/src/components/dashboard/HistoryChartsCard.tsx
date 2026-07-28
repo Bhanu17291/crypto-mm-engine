@@ -45,7 +45,7 @@ export function HistoryChartsCard({ history }: { history: StatusSnapshot[] }) {
   const empty = data.length < 2
 
   return (
-    <Card className="gap-3 border-border/60 bg-card p-4 shadow-none">
+    <Card className="gap-3 border-border/60 bg-card p-4 shadow-lg shadow-black/20">
       <Tabs defaultValue="equity">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-muted-foreground">History</span>

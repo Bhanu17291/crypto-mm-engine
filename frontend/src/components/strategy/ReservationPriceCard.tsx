@@ -6,7 +6,7 @@ import type { StatusSnapshot } from '@/types/status'
 export function ReservationPriceCard({ status }: { status: StatusSnapshot | null }) {
   if (!status) {
     return (
-      <Card className="gap-3 border-border/60 bg-card p-4 shadow-none">
+      <Card className="gap-3 border-border/60 bg-card p-4 shadow-lg shadow-black/20">
         <span className="text-xs font-medium text-muted-foreground">Reservation Price</span>
         <Skeleton className="h-24 w-full" />
       </Card>
@@ -17,7 +17,7 @@ export function ReservationPriceCard({ status }: { status: StatusSnapshot | null
   const skewedByInventory = status.inventory !== 0
 
   return (
-    <Card className="gap-3 border-border/60 bg-card p-4 shadow-none">
+    <Card className="gap-3 border-border/60 bg-card p-4 shadow-lg shadow-black/20">
       <span className="text-xs font-medium text-muted-foreground">Reservation Price</span>
 
       <div className="flex items-baseline gap-3">

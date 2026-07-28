@@ -33,10 +33,19 @@ export function StatCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
     >
-      <Card className="gap-2 border-border/60 bg-card p-4 shadow-none transition-colors hover:border-border">
-        <div className="flex items-center justify-between text-muted-foreground">
-          <span className="text-xs font-medium">{label}</span>
-          <Icon className="size-3.5" strokeWidth={2} />
+      <Card className="gap-2 border-border/60 bg-card p-4 shadow-lg shadow-black/20">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">{label}</span>
+          <div
+            className={cn(
+              'flex size-6 items-center justify-center rounded-lg',
+              resolvedTone === 'positive' && 'bg-positive-muted text-positive',
+              resolvedTone === 'negative' && 'bg-negative-muted text-negative',
+              resolvedTone === 'neutral' && 'bg-brand/12 text-brand',
+            )}
+          >
+            <Icon className="size-3.5" strokeWidth={2.25} />
+          </div>
         </div>
 
         {loading || value == null ? (

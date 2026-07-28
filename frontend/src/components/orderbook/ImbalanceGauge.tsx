@@ -14,7 +14,7 @@ export function ImbalanceGauge({
   const bidPct = total > 0 ? (bidVolume / total) * 100 : 50
 
   return (
-    <Card className="gap-3 border-border/60 bg-card p-4 shadow-none">
+    <Card className="gap-3 border-border/60 bg-card p-4 shadow-lg shadow-black/20">
       <span className="text-xs font-medium text-muted-foreground">Market Imbalance (top 20)</span>
       <div className="h-2.5 w-full overflow-hidden rounded-full bg-negative-muted">
         <div

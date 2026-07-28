@@ -19,7 +19,7 @@ export function PnlBreakdownChart({ history }: { history: StatusSnapshot[] }) {
   const empty = data.length < 2
 
   return (
-    <Card className="gap-3 border-border/60 bg-card p-4 shadow-none">
+    <Card className="gap-3 border-border/60 bg-card p-4 shadow-lg shadow-black/20">
       <span className="text-xs font-medium text-muted-foreground">
         Realized vs. Unrealized P&L (this session)
       </span>

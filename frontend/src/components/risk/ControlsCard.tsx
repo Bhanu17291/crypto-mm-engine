@@ -5,7 +5,7 @@ import type { RiskStatus } from '@/types/status'
 
 export function ControlsCard({ risk }: { risk: RiskStatus | null }) {
   return (
-    <Card className="gap-3 border-border/60 bg-card p-4 shadow-none">
+    <Card className="gap-3 border-border/60 bg-card p-4 shadow-lg shadow-black/20">
       <span className="text-xs font-medium text-muted-foreground">Trading Controls</span>
 
       {!risk ? (

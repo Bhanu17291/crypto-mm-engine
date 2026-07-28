@@ -16,7 +16,7 @@ export function FillRateRangeGauge({
   const marker = fillRate != null ? fillRate * 100 : null
 
   return (
-    <Card className="gap-3 border-border/60 bg-card p-4 shadow-none">
+    <Card className="gap-3 border-border/60 bg-card p-4 shadow-lg shadow-black/20">
       <span className="text-xs font-medium text-muted-foreground">
         Fill Rate ({limits?.fill_rate_window ?? '—'}-cycle window)
       </span>

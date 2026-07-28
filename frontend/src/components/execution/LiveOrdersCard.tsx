@@ -14,7 +14,7 @@ export function LiveOrdersCard({ status }: { status: StatusSnapshot | null }) {
   ].filter((o): o is { id: string; side: 'bid' | 'ask'; price: number; size: number } => o != null)
 
   return (
-    <Card className="gap-3 border-border/60 bg-card p-4 shadow-none">
+    <Card className="gap-3 border-border/60 bg-card p-4 shadow-lg shadow-black/20">
       <span className="text-xs font-medium text-muted-foreground">Live Orders</span>
 
       {!status ? null : orders.length === 0 ? (

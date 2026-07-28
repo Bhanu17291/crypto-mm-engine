@@ -13,14 +13,14 @@ export function Sidebar() {
     <motion.aside
       animate={{ width: collapsed ? 72 : 232 }}
       transition={{ type: 'spring', stiffness: 340, damping: 32 }}
-      className="m-3 mr-0 hidden shrink-0 flex-col rounded-2xl border border-sidebar-border bg-sidebar shadow-[0_1px_2px_rgba(0,0,0,0.04)] md:flex"
+      className="bg-mesh-glow m-3 mr-0 hidden shrink-0 flex-col rounded-2xl border border-sidebar-border bg-sidebar shadow-xl shadow-black/30 md:flex"
     >
       <div className="flex h-14 items-center gap-2 px-4">
-        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand text-brand-foreground">
+        <div className="bg-gradient-brand flex size-7 shrink-0 items-center justify-center rounded-lg text-brand-foreground shadow-md shadow-brand/30">
           <Activity className="size-4" strokeWidth={2.5} />
         </div>
         {!collapsed && (
-          <span className="truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
+          <span className="text-gradient-brand truncate text-sm font-semibold tracking-tight">
             crypto-mm-engine
           </span>
         )}
@@ -69,19 +69,22 @@ function NavRow({
   const row = ({ isActive }: { isActive: boolean }) => (
     <div
       className={cn(
-        'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+        'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all',
         isActive
-          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+          ? 'bg-gradient-to-r from-brand/20 via-brand/10 to-transparent font-medium text-sidebar-accent-foreground shadow-sm shadow-brand/10'
           : 'text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
       )}
     >
       {isActive && (
         <motion.span
           layoutId="active-nav-indicator"
-          className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-brand"
+          className="bg-gradient-brand absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full shadow-[0_0_8px_var(--brand)]"
         />
       )}
-      <Icon className="size-4 shrink-0" strokeWidth={2} />
+      <Icon
+        className={cn('size-4 shrink-0', isActive && 'text-brand')}
+        strokeWidth={2}
+      />
       {!collapsed && <span className="truncate">{item.label}</span>}
     </div>
   )

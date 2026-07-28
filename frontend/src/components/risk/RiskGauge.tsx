@@ -18,7 +18,7 @@ export function RiskGauge({
   const tone = pct >= 90 ? 'negative' : pct >= 70 ? 'warning' : 'positive'
 
   return (
-    <Card className="gap-3 border-border/60 bg-card p-4 shadow-none">
+    <Card className="gap-3 border-border/60 bg-card p-4 shadow-lg shadow-black/20">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-muted-foreground">{label}</span>
         <span

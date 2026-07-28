@@ -25,7 +25,12 @@ export function TopBar({
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div
+          className={cn(
+            'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+            connected ? 'bg-positive-muted text-positive' : 'bg-negative-muted text-negative',
+          )}
+        >
           <span className="relative flex size-2">
             {connected && (
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-positive opacity-60" />
@@ -33,14 +38,16 @@ export function TopBar({
             <span
               className={cn(
                 'relative inline-flex size-2 rounded-full',
-                connected ? 'bg-positive' : 'bg-negative',
+                connected ? 'bg-positive shadow-[0_0_6px_var(--positive)]' : 'bg-negative',
               )}
             />
           </span>
           {connected ? 'Live' : 'Disconnected'}
         </div>
-        <Avatar className="size-7">
-          <AvatarFallback className="bg-secondary text-[11px]">MM</AvatarFallback>
+        <Avatar className="size-7 ring-2 ring-brand/30">
+          <AvatarFallback className="bg-gradient-brand text-[11px] text-brand-foreground">
+            MM
+          </AvatarFallback>
         </Avatar>
       </div>
     </header>
