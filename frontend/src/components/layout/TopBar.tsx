@@ -1,7 +1,10 @@
+import { ArrowLeft } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { NAV_ITEMS } from './nav-config'
 import { cn } from '@/lib/utils'
+
+const TRADING_HUB_URL = 'http://localhost:5190'
 
 export function TopBar({
   symbol,
@@ -16,6 +19,13 @@ export function TopBar({
   return (
     <header className="flex h-14 shrink-0 items-center justify-between px-6">
       <div className="flex items-center gap-3">
+        <a
+          href={TRADING_HUB_URL}
+          className="group flex items-center gap-1.5 rounded-full border border-border bg-card/60 px-2.5 py-1 text-xs font-medium text-muted-foreground backdrop-blur transition-colors hover:border-brand/40 hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
+          Trading Systems
+        </a>
         <h1 className="text-sm font-semibold tracking-tight">{title}</h1>
         {symbol && (
           <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
