@@ -15,7 +15,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider delayDuration={200}>
-        <BrowserRouter>
+        <BrowserRouter basename="/crypto">
           <Routes>
             <Route element={<AppShell />}>
               <Route index element={<DashboardPage />} />

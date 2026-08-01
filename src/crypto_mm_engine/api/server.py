@@ -15,7 +15,12 @@ from crypto_mm_engine.live.status import CancelEvent, FillEvent, StatusSnapshot,
 logger = logging.getLogger(__name__)
 
 _BROADCAST_INTERVAL_S = 0.5
-_DEV_ORIGINS = ["http://localhost:5180", "http://127.0.0.1:5180"]
+_DEV_ORIGINS = [
+    "http://localhost:5180",
+    "http://127.0.0.1:5180",
+    "http://localhost:5190",
+    "http://127.0.0.1:5190",
+]
 
 
 def create_app(runner: PaperTradingRunner) -> FastAPI:

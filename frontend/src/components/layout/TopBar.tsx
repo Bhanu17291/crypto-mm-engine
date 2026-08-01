@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { NAV_ITEMS } from './nav-config'
 import { cn } from '@/lib/utils'
 
-const TRADING_HUB_URL = 'http://localhost:5190'
+const TRADING_HUB_URL = '/'
 
 export function TopBar({
   symbol,
